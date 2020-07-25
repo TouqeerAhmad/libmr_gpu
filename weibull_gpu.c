@@ -25,10 +25,45 @@
 extern "C" {
 #endif
 
+  
+static double weibull_scale_likelihood(double sigma, double* x, double* w, double xbar, int size)
+{
+  double v;
+  double* wLocal;
+  int i;
+  double sumxw;
+  double sumw;
+  
+  printf("Printing w[i] in weibull_scale_likelihood ...");
+  for (int k = 0; k < size; k++)
+    printf("%f\n",w[k]);
+  
+    
+  wLocal=(double*)malloc(sizeof(double)*size);
+    
+  for (i=0; i<size; i++)
+  {
+    wLocal[i]=w[i]*exp(x[i]/sigma);
+  }
+  
+  sumxw=0;
+  sumw=0;
+    
+  for (i=0; i<size; i++)
+  {
+    sumxw+=(wLocal[i]*x[i]);
+    sumw+=wLocal[i];
+  }
+    
+  v = (sigma + xbar - sumxw / sumw);
+
+  free(wLocal);
+  return v;
+}  
 
 int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, double* inputData, double alpha, int size)
 {
-  printf("In weibull_fit_gpu function ...\n");
+  printf("\n\nIn weibull_fit_gpu function ...\n");
   clock_t t_start; 
   t_start = clock();  
   
@@ -190,6 +225,53 @@ int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, dou
       sigmahat = (sqrt((double)(6.0))*myStd)/PI;
       printf("sigmahat = %f\n", sigmahat);
       
+      
+      
+      meanUncensored=0;
+      
+      for (i=0; i<size; i++)
+      {
+        meanUncensored+=(frequency[i]*x0[i])/n;
+      }
+      printf("meanUncensored = %f\n", meanUncensored);
+      
+      if ((tempVal=weibull_scale_likelihood(sigmahat,x0,frequency,meanUncensored,size)) > 0)
+      {
+        printf("In the if condition ...\n");
+        
+        upper=sigmahat;
+        lower=0.5*upper;
+        
+        while((tempVal=weibull_scale_likelihood(lower,x0,frequency,meanUncensored,size)) > 0)
+        {
+          upper = lower;
+          lower = 0.5 * upper;
+          
+          if (lower < FULL_PRECISION_MIN)
+          {
+            printf("MLE in wbfit Failed to converge leading for underflow in root finding\n");
+          }
+        }
+      }
+      else
+      {
+        printf("In the else part ...\n");
+        
+        lower = sigmahat;
+        upper = 2.0 * lower;
+        
+        while ((tempVal=weibull_scale_likelihood(upper,x0,frequency,meanUncensored,size)) < 0)
+        {
+          lower=upper;
+          upper = 2 * lower;
+        }
+      }
+      /* ****************************************** */
+      search_band[0]=lower;
+      search_band[1]=upper;
+      
+      printf("lower = %f\n", lower);
+      printf("upper = %f\n", upper);
       
     }
     

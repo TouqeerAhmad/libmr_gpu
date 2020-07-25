@@ -961,9 +961,12 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
         {
           meanUncensored+=(frequency[i]*x0[i])/n;
         }
+      printf("meanUncensored = %f\n", meanUncensored);
 
       if ((tempVal=weibull_scale_likelihood(sigmahat,x0,frequency,meanUncensored,size)) > 0)
         {
+          printf("In the if condition ...\n");
+          
           upper=sigmahat;
           lower=0.5*upper;
 
@@ -980,6 +983,8 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
         }
       else
         {
+          printf("In the else part ...\n");
+          
           lower = sigmahat;
           upper = 2.0 * lower;
 
@@ -1001,6 +1006,9 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
       search_band[0]=lower;
       search_band[1]=upper;
 
+      printf("lower = %f\n", lower);
+      printf("upper = %f\n", upper);  
+      
       /* ... Next we  go find the root (zero) of the likelihood eqn which  wil be the MLE for sigma. */
       /* then  the MLE for mu has an explicit formula from that.  */
 
