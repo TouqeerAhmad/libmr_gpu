@@ -476,6 +476,8 @@ static int  weibull_neg_log_likelihood(double* nlogL, double* acov, double* weib
       {
         double sigmaSq = sigma * sigma;
         double avarDenom = (nH11*nH22 - nH12*nH12);
+        
+        printf("avarDenom %f\n", avarDenom);
 
         acov[0]=sigmaSq*(nH22/avarDenom);
         acov[1]=sigmaSq*((-1*nH12)/avarDenom);
@@ -1018,6 +1020,9 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
 
 
         code = wdfzero(&sigmahat,&likelihood_value,&err,search_band,tol,x0,frequency,meanUncensored,size);
+        
+        printf("code = %d\n", code);
+        
 
 #ifndef WEIBULL_IGNORE_ERRORS
 #ifdef WEIBULL_USE_ASSERTS
@@ -1066,6 +1071,15 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
 
 
           rval=weibull_neg_log_likelihood(&nlogL,acov,weibullparms,inputData,censoring,frequency,size);
+          
+          printf("nlogL  = %f\n", nlogL);
+          printf("acov[0]  = %f\n", acov[0]);
+          printf("acov[1]  = %f\n", acov[1]);
+          printf("acov[2]  = %f\n", acov[2]);
+          printf("acov[3]  = %f\n", acov[3]);
+          
+          
+          
           if(rval<0) WEIBULL_ERROR_HANDLER(-5,"Failed to fine final parameters settings MLE failed. Memory leaked");
 
           /* ****************************************** */

@@ -169,17 +169,8 @@ vector<double> parse1DBinFile(string inputFileName, int size) {
   return data;
 }
 
-  
-  
-int main(int argc, char **argv)
+void Test_On_FV_Distances()
 {
-  //if(argc > 1) verbose=1;
-  
-  if(verbose) printf("Test C-code models\n");
-  Test_C_Code();
-  Test_C_Code_GPU();
-  
-  /*
   vector<double> exampleFV;
   exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
   printf("%f\n",exampleFV[39995]);
@@ -204,9 +195,18 @@ int main(int argc, char **argv)
   printf("%f %f %d %d %f\n", mr1.get_scale_param(), mr1.get_shape_param(), mr1.get_sign(), mr1.get_translate_amount(), mr1.get_small_score());
   
   free(data);
-  */
-   
-   
+}
+  
+  
+int main(int argc, char **argv)
+{
+  //if(argc > 1) verbose=1;
+  
+  if(verbose) printf("Test C-code models\n");
+  Test_C_Code();
+  Test_C_Code_GPU();
+  
+  //Test_On_FV_Distances();
   
   
   //int length=sizeof(tail)/sizeof(double);

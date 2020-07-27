@@ -49,6 +49,26 @@ void scale_likelihood(int size, double sigma, double *sumxw, double *sumw, doubl
 }
 
 
+__global__
+void neg_log_likelihood(double size, double mu, double sigma, double logSigma, double *data, double *censoring, double *frequency, double *nH11, double *nH12, double *nH22, double *nlogL)
+{
+  
+  int i = blockIdx.x*blockDim.x + threadIdx.x;
+  if (i < size)
+  {
+    double z, expz, L, unc;
+    
+    z = (data[i]-mu)/sigma;
+    expz = exp(z);
+    L = (z-logSigma)*(1-censoring[i]-expz);
+    unc = (1-censoring[i]);
+    
+    atomicAdd(nlogL,frequency[i]*L);
+    atomicAdd(nH11,frequency[i]*expz);
+    atomicAdd(nH12, frequency[i] * ((z + 1) * expz - unc));
+    atomicAdd(nH22, frequency[i] * (z *(z + 2) * expz - ((2 * z + 1) *unc)));
+  }
+}
 
 
 #ifdef __cplusplus
@@ -90,6 +110,67 @@ void runKernels()
 }
 
 
+void runKernels_NegLogLikelihood(double* nlogL, double* acov, double* weibulparms, double* data, double* censoring, double* frequency, int size)
+{
+
+  double mu = weibulparms[0]; // scale
+  double sigma = weibulparms[1]; // shape
+  double logSigma;
+  
+  
+  double nH11 = 0.0;
+  double nH12 = 0.0;
+  double nH22 = 0.0;
+  
+  logSigma = log(sigma);
+  
+  double *dev_data, *dev_censoring, *dev_frequency, *dev_nH11, *dev_nH12, *dev_nH22, *dev_nlogL;
+  
+  cudaMalloc(&dev_data, size*sizeof(double));
+  cudaMalloc(&dev_censoring, size*sizeof(double));
+  cudaMalloc(&dev_frequency, size*sizeof(double));
+  cudaMalloc(&dev_nH11, sizeof(double));
+  cudaMalloc(&dev_nH12, sizeof(double));
+  cudaMalloc(&dev_nH22, sizeof(double));
+  cudaMalloc(&dev_nlogL, sizeof(double));
+  
+  cudaMemcpy(dev_data, data, size*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_censoring, censoring, size*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_frequency, frequency, size*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_nH11, &nH11, sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_nH12, &nH12, sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_nH22, &nH22, sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_nlogL, nlogL, sizeof(double), cudaMemcpyHostToDevice);
+  
+  neg_log_likelihood<<<(size+255)/256, 256>>>(size, mu, sigma, logSigma, dev_data, dev_censoring, dev_frequency, dev_nH11, dev_nH12, dev_nH22, dev_nlogL);
+  
+  // copy to host
+  cudaMemcpy(nlogL, dev_nlogL, sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(&nH11, dev_nH11, sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(&nH12, dev_nH12, sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(&nH22, dev_nH22, sizeof(double), cudaMemcpyDeviceToHost);
+  
+  *nlogL = *nlogL * -1;
+
+  double sigmaSq = sigma * sigma;
+  double avarDenom = (nH11*nH22 - nH12*nH12);
+      
+  printf("avarDenom gpu %f\n", avarDenom);
+    
+  acov[0]=sigmaSq*(nH22/avarDenom);
+  acov[1]=sigmaSq*((-1*nH12)/avarDenom);
+  acov[2]=sigmaSq*((-1*nH12)/avarDenom);
+  acov[3]=sigmaSq*(nH11/avarDenom);
+
+  cudaFree(dev_nlogL);
+  cudaFree(dev_nH22);
+  cudaFree(dev_nH12);
+  cudaFree(dev_nH11);
+  cudaFree(dev_frequency);
+  cudaFree(dev_censoring);
+  cudaFree(dev_data);
+  
+}
 
 double runKernels_ScaleLikelihood(double sigma, double *x, double *w, double xbar, int size)
 {

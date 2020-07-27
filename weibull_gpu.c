@@ -25,55 +25,194 @@
 extern "C" {
 #endif
 
-  
-static double weibull_scale_likelihood(double sigma, double* x, double* w, double xbar, int size)
+
+static int  weibull_neg_log_likelihood(double* nlogL, double* acov, double* weibulparms, double* data,
+                                         double* censoring, double* frequency, int size)
 {
-  
-  /*
-  double v;
-  double* wLocal;
-  int i;
-  double sumxw;
-  double sumw;
-  
-  
-  printf("Printing w[i] in weibull_scale_likelihood ...");
-  for (int k = 0; k < size; k++)
-    printf("%f\n",w[k]);
-  
+  runKernels_NegLogLikelihood(nlogL, acov, weibulparms, data, censoring, frequency, size);
+  return 0;
+}
+
     
-  wLocal=(double*)malloc(sizeof(double)*size);
-    
-  for (i=0; i<size; i++)
-  {
-    wLocal[i]=w[i]*exp(x[i]/sigma);
-  }
-  
-  sumxw=0;
-  sumw=0;
-    
-  for (i=0; i<size; i++)
-  {
-    sumxw+=(wLocal[i]*x[i]);
-    sumw+=wLocal[i];
-  }
-    
-  v = (sigma + xbar - sumxw / sumw);
-  
-  free(wLocal);
-  
-  
-  double v1 = runKernels_ScaleLikelihood(sigma, x, w, xbar, size);
-  
-  printf("v = %f\n", v);
-  printf("v1 = %f\n", v1);
-  
-  return v;
-  */
-  
+static double weibull_scale_likelihood(double sigma, double* x, double* w, double xbar, int size)
+{ 
   return runKernels_ScaleLikelihood(sigma, x, w, xbar, size);
+}
+
+ 
+/* based on dfzero from fortan, it finxs the zero in the given search bands, and stops if it is within tolerance. */
+static int wdfzero(double* sigmahat, double* likelihood_value, double* err, double* search_bands, double tol,
+                     double* x0, double* frequency, double meanUncensored, int size)
+{
+  double exitflag;
+  double a,b,c=0.0,d=0.0,e=0.0,m,p,q,r,s;
+  double fa,fb,fc;
+  double fval;
+  double tolerance;
+    
+  exitflag=1;
+  *err = exitflag;
+    
+  a = search_bands[0];
+  b = search_bands[1];
+    
+  fa = weibull_scale_likelihood(a,x0,frequency,meanUncensored,size);
+  fb = weibull_scale_likelihood(b,x0,frequency,meanUncensored,size);
+    
+  if (fa == 0)
+  {
+    b=a;
+    *sigmahat=b;
+    fval = fa;
+    *likelihood_value = fval;
+    return 1;
+  }
+  else if (fb == 0)
+  {
+    fval=fb;
+    *likelihood_value = fval;
+    *sigmahat=b;
+    return 1;
+  }
+  else if ((fa > 0) == (fb > 0))
+  {
+    //WEIBULL_ERROR_HANDLER(-4,"ERROR: wdfzero says function values at the interval endpoints must differ in sign\n");
+  }
+    
+  fc = fb;
+    
+  /*Main loop, exit from middle of the loop */
+  while (fb != 0)
+  {
+    /* Insure that b is the best result so far, a is the previous */
+    /* value of b, and that c is  on the opposite size of the zero from b. */
+    if ((fb > 0) == (fc > 0))
+    {
+      c = a;
+      fc = fa;
+      d = b - a;
+      e = d;
+    }
+      
+    {
+      double absFC;
+      double absFB;
+        
+      absFC=fabs(fc);
+      absFB=fabs(fb);
+        
+      if (absFC < absFB)
+      {
+        a = b;
+        b = c;
+        c = a;
+        fa = fb;
+        fb = fc;
+        fc = fa;
+      }
+    }
+      
+    /*set up for test of Convergence, is the interval small enough? */
+    m = 0.5*(c - b);
+      
+    {
+      double absB,  absM,  absFA,absFB, absE;
+      absB=fabs(b);
+      absM=fabs(m);
+      absFA=fabs(fa);
+      absFB=fabs(fb);
+      absE=fabs(e);
+        
+      {
+        tolerance = 2.0*tol *((absB > 1.0) ? absB : 1.0);
+        
+        if ((absM <= tolerance) | (fb == 0.0))
+          break;
+          
+        /*Choose bisection or interpolation */
+        if ((absE < tolerance) | (absFA <= absFB))
+        {
+          /*Bisection */
+          d = m;
+          e = m;
+        }
+        else
+        {
+          /*Interpolation */
+          s = fb/fa;
+            
+          if (a == c)
+          {
+            /*Linear interpolation */
+            p = 2.0*m*s;
+            q = 1.0 - s;
+          }
+          else
+          {
+            /*Inverse quadratic interpolation */
+            q = fa/fc;
+            r = fb/fc;
+            p = s*(2.0*m*q*(q - r) - (b - a)*(r - 1.0));
+            q = (q - 1.0)*(r - 1.0)*(s - 1.0);
+          }
+            
+          if (p > 0)
+            q = -1.0*q;
+          else
+            p = -1.0*p;
+        }
+      }
+      
+      
+      {
+        double tempTolerance = tolerance*q;
+        double absToleranceQ;
+        double absEQ;
+        double tempEQ = (0.5 * e * q);
+        absToleranceQ=fabs(tempTolerance);
+        absEQ=fabs(tempEQ);
+          
+        /*Is interpolated point acceptable */
+        if ((2.0*p < 3.0*m*q - absToleranceQ) & (p < absEQ))
+        {
+          e = d;
+          d = p/q;
+        }
+        else
+        {
+          d = m;
+          e = m;
+        }
+      }
+        
+    } /*Interpolation */
+          
+    /*Next point */
+    a = b;
+    fa = fb;
+      
+    if (fabs(d) > tolerance)
+      b = b + d;
+    else if (b > c)
+      b = b - tolerance;
+    else
+      b = b + tolerance;
+      
+    fb = weibull_scale_likelihood(b,x0,frequency,meanUncensored,size);
+      
+  }/*Main loop (While) */
+          
+  fval=weibull_scale_likelihood(b,x0,frequency,meanUncensored,size);
+  *likelihood_value = fval;
+  *sigmahat=b;
+    
+  return 1;
+}
   
-}  
+    
+
+  
+  
 
 int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, double* inputData, double alpha, int size)
 {
@@ -287,11 +426,107 @@ int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, dou
       printf("lower = %f\n", lower);
       printf("upper = %f\n", upper);
       
+      
+      // ... Next we  go find the root (zero) of the likelihood eqn which  wil be the MLE for sigma. 
+      // then  the MLE for mu has an explicit formula from that.  */
+      
+      {
+        double err;
+        double likelihood_value;
+        code = wdfzero(&sigmahat,&likelihood_value,&err,search_band,tol,x0,frequency,meanUncensored,size);
+        printf("code = %d\n", code);
+        
+      }
+      
+      
+      /* ****************************************** */
+      {
+        double muHat;
+        double sumfrequency;
+        
+        muHat=0;
+        sumfrequency=0;
+        
+        for (i=0; i<size; i++)
+        {
+          tempVal=exp(x0[i]/sigmahat);
+          sumfrequency +=(frequency[i]*tempVal);
+        }
+        
+        sumfrequency = sumfrequency / nuncensored;
+        muHat = sigmahat * log(sumfrequency);
+        
+        /* ****************************************** */
+        
+        /*Those were parameter estimates for the shifted, scaled data, now */
+        /*transform the parameters back to the original location and scale. */
+        weibullparms[0]=(range*muHat)+maxx;
+        weibullparms[1]=(range*sigmahat);
+      }
+      
     }
-    
   }
   
-  //runKernels();
+  
+  {
+    int rval;
+    double nlogL=0, tempVal;
+    double transfhat[2], se[2], probs[2],acov[4];
+    
+    probs[0]=alpha/2;
+    probs[1]=1-alpha/2;
+    /* ****************************************** */
+    
+    
+    rval=weibull_neg_log_likelihood(&nlogL,acov,weibullparms,inputData,censoring,frequency,size);
+    
+    printf("nlogL  = %f\n", nlogL);
+    printf("acov[0]  = %f\n", acov[0]);
+    printf("acov[1]  = %f\n", acov[1]);
+    printf("acov[2]  = %f\n", acov[2]);
+    printf("acov[3]  = %f\n", acov[3]);
+    
+    //if(rval<0) WEIBULL_ERROR_HANDLER(-5,"Failed to fine final parameters settings MLE failed. Memory leaked");
+    
+    /* ****************************************** */
+    /*Compute the Confidence Interval (CI)  for mu using a normal approximation for muhat.  Compute */
+    /*the CI for sigma using a normal approximation for log(sigmahat), and */
+    /*transform back to the original scale. */
+    
+    transfhat[0]=weibullparms[0];
+    transfhat[1]=log(weibullparms[1]);
+    
+    se[0]=sqrt(acov[0]);
+    se[1]=sqrt(acov[3]);
+    se[1]=se[1]/weibullparms[1];
+    
+    //rval=wnorminv(wparm_confidenceintervals,probs,transfhat,se,4);
+    //if(rval<0) WEIBULL_ERROR_HANDLER(-7,"Cannot compute confidence interval since wnorminv fails. Memory leaked");
+    
+    //wparm_confidenceintervals[2]=exp(wparm_confidenceintervals[2]);
+    //wparm_confidenceintervals[3]=exp(wparm_confidenceintervals[3]);
+    
+    //tempVal=wparm_confidenceintervals[2];
+    //wparm_confidenceintervals[2]=1/wparm_confidenceintervals[3];
+    //wparm_confidenceintervals[3]=1/tempVal;
+    
+    //wparm_confidenceintervals[0]=exp(wparm_confidenceintervals[0]);
+    //wparm_confidenceintervals[1]=exp(wparm_confidenceintervals[1]);
+    
+    //weibullparms[0]=exp(weibullparms[0]);
+    //weibullparms[1]=1/weibullparms[1];
+  }
+  
+  /*free all memory */
+  free(x0);
+  free(var);
+  free(censoring);
+  free(frequency);
+  
+  
+  t_start = clock() - t_start; 
+  double time_taken = ((double)t_start)/CLOCKS_PER_SEC; // in seconds 
+  printf("fun() took %f seconds to execute \n", time_taken); 
   
   
 }
