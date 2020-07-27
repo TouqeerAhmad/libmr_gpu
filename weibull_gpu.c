@@ -29,6 +29,7 @@ extern "C" {
 static double weibull_scale_likelihood(double sigma, double* x, double* w, double xbar, int size)
 {
   
+  /*
   double v;
   double* wLocal;
   int i;
@@ -68,6 +69,9 @@ static double weibull_scale_likelihood(double sigma, double* x, double* w, doubl
   printf("v1 = %f\n", v1);
   
   return v;
+  */
+  
+  return runKernels_ScaleLikelihood(sigma, x, w, xbar, size);
   
 }  
 
