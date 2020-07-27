@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 __global__
 void saxpy(int n, float a, float *x, float *y)
@@ -32,6 +33,21 @@ void compute_std(int size, double *x0, double *mean, double *myStd)
     atomicAdd(myStd,tempValSq);
   }
 }
+
+
+__global__
+void scale_likelihood(int size, double sigma, double *sumxw, double *sumw, double *x, double *w)
+{
+  int i = blockIdx.x*blockDim.x + threadIdx.x;
+  double wLocal;
+  if (i < size)
+  {
+    wLocal = w[i] * exp(x[i]/sigma);
+    atomicAdd(sumw,wLocal);
+    atomicAdd(sumxw,wLocal*x[i]);
+  }
+}
+
 
 
 
@@ -74,7 +90,45 @@ void runKernels()
 }
 
 
-void runKernels_ComputeMeanAndStd(double * inputData, double * x0, double *mean, double *myStd, double maxx, double range, int size)
+
+double runKernels_ScaleLikelihood(double sigma, double *x, double *w, double xbar, int size)
+{
+  
+  double sumxw = 0.0;
+  double sumw = 0.0; 
+  
+  double *device_x, *device_w, *device_sumxw, *device_sumw;
+  
+  cudaMalloc(&device_x, size*sizeof(double)); 
+  cudaMalloc(&device_w, size*sizeof(double));
+  cudaMalloc(&device_sumxw, sizeof(double));
+  cudaMalloc(&device_sumw, sizeof(double));
+  
+  cudaMemcpy(device_x, x, size*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(device_w, w, size*sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(device_sumxw, &sumxw, sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(device_sumw, &sumw, sizeof(double), cudaMemcpyHostToDevice);
+  
+  scale_likelihood<<<(size+255)/256, 256>>>(size, sigma, device_sumxw, device_sumw, device_x, device_w);
+  
+  // copy the sums to host
+  cudaMemcpy(&sumxw, device_sumxw, sizeof(double), cudaMemcpyDeviceToHost);
+  cudaMemcpy(&sumw, device_sumw, sizeof(double), cudaMemcpyDeviceToHost);
+  
+  
+  double v;
+  v = (sigma + xbar - sumxw / sumw);
+  
+  cudaFree(device_sumw);
+  cudaFree(device_sumxw);
+  cudaFree(device_w);
+  cudaFree(device_x);
+  
+  return v;
+}
+
+
+void runKernels_ComputeMeanAndStd(double *inputData, double *x0, double *mean, double *myStd, double maxx, double range, int size)
 {
   
   double *device_inputData, *device_x0, *device_mean, *device_myStd;

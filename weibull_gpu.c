@@ -28,11 +28,13 @@ extern "C" {
   
 static double weibull_scale_likelihood(double sigma, double* x, double* w, double xbar, int size)
 {
+  
   double v;
   double* wLocal;
   int i;
   double sumxw;
   double sumw;
+  
   
   printf("Printing w[i] in weibull_scale_likelihood ...");
   for (int k = 0; k < size; k++)
@@ -56,9 +58,17 @@ static double weibull_scale_likelihood(double sigma, double* x, double* w, doubl
   }
     
   v = (sigma + xbar - sumxw / sumw);
-
+  
   free(wLocal);
+  
+  
+  double v1 = runKernels_ScaleLikelihood(sigma, x, w, xbar, size);
+  
+  printf("v = %f\n", v);
+  printf("v1 = %f\n", v1);
+  
   return v;
+  
 }  
 
 int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, double* inputData, double alpha, int size)
