@@ -134,7 +134,7 @@ void Test_C_Code()
 
 
   vector<double> exampleFV;
-  exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
+  exampleFV = parse1DBinFile("sample_data/FV0.bin", 40000);
   double *data = (double *)malloc(sizeof(double)*40000);
 
   for (int k = 0; k < 40000; k++)
@@ -181,7 +181,7 @@ void Test_C_Code_GPU()
 //#define TAIL_SIZE 10
 
   vector<double> exampleFV;
-  exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
+  exampleFV = parse1DBinFile("sample_data/FV0.bin", 40000);
   double *data = (double *)malloc(sizeof(double)*40000);
 
   for (int k = 0; k < 40000; k++)
