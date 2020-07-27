@@ -179,6 +179,22 @@ double runKernels_ScaleLikelihood(double sigma, double *x, double *w, double xba
 void runKernels_ComputeMeanAndStd(double *inputData, double *x0, double *mean, double *myStd, double maxx, double range, int size)
 {
   
+  //int GPU_N, which_device;
+  
+  //cudaGetDeviceCount(&GPU_N);
+  //printf("CUDA-capable device count: %i\n", GPU_N);
+  
+  //cudaGetDevice(&which_device);
+  //printf("CUDA-which device being used: %i\n", which_device);
+
+  //cudaSetDevice(1);
+
+  //const size_t malloc_limit = size_t(4608) * size_t(1024) * size_t(1024);
+  //size_t pValue;
+
+  //cudaDeviceSetLimit(cudaLimitMallocHeapSize, malloc_limit);
+  
+
   double *device_inputData, *device_x0, *device_mean, *device_myStd;
   
   cudaMalloc(&device_inputData, size*sizeof(double)); 
