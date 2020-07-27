@@ -101,73 +101,99 @@ double Wsmall_ans[] = { 1.000000000, 0.94423579,  0.39834863,  0.26183566,  0.26
 
 
 
-
-void Test_C_Code()
-{
-  printf("In Test_C_Code now ... \n");
-	int i;
-	// example of weibull_fit()
-	double* weibull_parms = (double *)malloc(sizeof(double)* 2);
-	double* parms_confidence_internal  = (double *)malloc(sizeof(double)* 4);
-#define ALPHA 0.05
-#define FITTING_SIZE 9
-#define TAIL_SIZE 10
-
-	weibull_fit(weibull_parms, parms_confidence_internal, tail_fit_shifted, ALPHA, FITTING_SIZE);
-  //weibull_fit_gpu(weibull_parms, parms_confidence_internal, tail_fit_shifted, ALPHA, FITTING_SIZE);
-
-      if(verbose)	printf("weibull_parms: %f %f\n", weibull_parms[0], weibull_parms[1]);
-      if(verbose)	printf("parms_confidence_internal: %f %f %f %f\n", parms_confidence_internal[0], parms_confidence_internal[1], parms_confidence_internal[2], parms_confidence_internal[3]);
-
-      if(verbose)	printf("C-test of weibull cdf values:\n ");
-	for (i = 0; i < TAIL_SIZE ; i++)
-	{
-		double tempcdf = weibull_cdf(tail_shifted[i], weibull_parms[0], weibull_parms[1]);
-                if(fabs(tempcdf - C_answers[i]) > 1e-8) printf("WARNING C_CODE TEST fails %12.8f should be %12.8f\n", tempcdf, C_answers[i]);
-                if(verbose)		printf("%12.10f ", tempcdf);
-	}
-      if(verbose)	printf("\n");
-
-        free(weibull_parms);
-        free(parms_confidence_internal);
-
-}
-
-
-void Test_C_Code_GPU()
-{
-  printf("In Test_C_Code_GPU now ... \n");
-  int i;
-  // example of weibull_fit()
-  double* weibull_parms = (double *)malloc(sizeof(double)* 2);
-  double* parms_confidence_internal  = (double *)malloc(sizeof(double)* 4);
-#define ALPHA 0.05
-#define FITTING_SIZE 9
-#define TAIL_SIZE 10
-
-
-  weibull_fit_gpu(weibull_parms, parms_confidence_internal, tail_fit_shifted_GPU, ALPHA, FITTING_SIZE);
-
-}
-  
-
 vector<double> parse1DBinFile(string inputFileName, int size) {
-    
+  
   vector<double> data;
-    
+  
   ifstream infile(inputFileName, ios::in | ios::binary);
   double my_temp;
   //int stop_here;
-    
+  
   for (int i_out = 0; i_out < size; i_out++)
   {
     infile.read((char *) &(my_temp), sizeof(my_temp));
     data.push_back(my_temp);
   }
   infile.close();
-    
+  
   return data;
 }
+
+
+
+void Test_C_Code()
+{
+  printf("\n\nIn Test_C_Code CPU now ... \n");
+	int i;
+	// example of weibull_fit()
+	double* weibull_parms = (double *)malloc(sizeof(double)* 2);
+	double* parms_confidence_internal  = (double *)malloc(sizeof(double)* 4);
+#define ALPHA 0.05
+#define FITTING_SIZE 2500
+//#define TAIL_SIZE 10
+
+
+  vector<double> exampleFV;
+  exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
+  double *data = (double *)malloc(sizeof(double)*40000);
+
+  for (int k = 0; k < 40000; k++)
+  {
+    data[k] = exampleFV[k];
+  }
+
+
+	//weibull_fit(weibull_parms, parms_confidence_internal, tail_fit_shifted, ALPHA, FITTING_SIZE);
+  
+  weibull_fit(weibull_parms, parms_confidence_internal, data, ALPHA, FITTING_SIZE);
+  
+  //weibull_fit_gpu(weibull_parms, parms_confidence_internal, tail_fit_shifted, ALPHA, FITTING_SIZE);
+
+  //    if(verbose)	printf("weibull_parms: %f %f\n", weibull_parms[0], weibull_parms[1]);
+  //    if(verbose)	printf("parms_confidence_internal: %f %f %f %f\n", parms_confidence_internal[0], parms_confidence_internal[1], parms_confidence_internal[2], parms_confidence_internal[3]);
+
+  //    if(verbose)	printf("C-test of weibull cdf values:\n ");
+	//for (i = 0; i < TAIL_SIZE ; i++)
+	//{
+	//	double tempcdf = weibull_cdf(tail_shifted[i], weibull_parms[0], weibull_parms[1]);
+  //              if(fabs(tempcdf - C_answers[i]) > 1e-8) printf("WARNING C_CODE TEST fails %12.8f should be %12.8f\n", tempcdf, C_answers[i]);
+  //              if(verbose)		printf("%12.10f ", tempcdf);
+	//}
+  //    if(verbose)	printf("\n");
+
+  //      free(weibull_parms);
+  //      free(parms_confidence_internal);
+
+}
+
+
+void Test_C_Code_GPU()
+{
+  printf("\n\nIn Test_C_Code_GPU now ... \n");
+  int i;
+  // example of weibull_fit()
+  double* weibull_parms = (double *)malloc(sizeof(double)* 2);
+  double* parms_confidence_internal  = (double *)malloc(sizeof(double)* 4);
+#define ALPHA 0.05
+
+#define FITTING_SIZE 2500
+//#define FITTING_SIZE 9
+//#define TAIL_SIZE 10
+
+  vector<double> exampleFV;
+  exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
+  double *data = (double *)malloc(sizeof(double)*40000);
+
+  for (int k = 0; k < 40000; k++)
+  {
+    data[k] = exampleFV[k];
+  }
+
+  weibull_fit_gpu(weibull_parms, parms_confidence_internal, data, ALPHA, FITTING_SIZE);
+
+}
+  
+
 
 void Test_On_FV_Distances()
 {

@@ -822,8 +822,6 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
         censoring[i]=0.0;
     }
     
-    printf("Data before and after log:\n");
-
     /*  ********************************************** */
     for (i=0; i<size; i++)
     {
@@ -835,9 +833,7 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
       WEIBULL_ERROR_HANDLER( -1,"cannot have data <=0  in call to weibull_fit\n");
 #endif
 #endif
-        printf("Before log = %f, ", inputData[i]);
         inputData[i]=log(inputData[i]);
-        printf("After log = %f \n", inputData[i]);
     }
     /*  ********************************************** */
     {
@@ -886,10 +882,6 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
       maxVal=-1000000000;
       minVal=1000000000;
       
-      printf("Computing the minVal and maxVal \n");
-      printf("inputData[0] = %f", inputData[0]);
-      printf("inputData[size-1] = %f", inputData[size-1]);
-
       
       for (i=0; i<size; i++)
         {
@@ -902,10 +894,6 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
             maxVal=tempVal;
         }
       
-      printf("Computed the minVal and maxVal \n");
-      printf("minVal = %f\n", minVal);
-      printf("maxVal = %f\n", maxVal);
-
       range = maxVal - minVal;
       maxx = maxVal;
 #ifndef WEIBULL_IGNORE_ERRORS
@@ -954,6 +942,8 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
       myStd/=(n-1);
       myStd=sqrt(myStd);
 
+      printf("Now printing mean = %f \n", mean);
+      printf("Now printing myStd = %f \n", myStd);
       sigmahat = (sqrt((double)(6.0))*myStd)/PI;
       printf("sigmahat = %f\n", sigmahat);
 

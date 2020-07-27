@@ -645,7 +645,7 @@ static int wnorminv(double* x, double* p,double *mu, double* sigma, int size)
   
 int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, double* inputData, double alpha, int size)
 {
-  printf("\n\nIn weibull_fit_gpu function ...\n");
+  printf("In weibull_fit_gpu function ...\n");
   clock_t t_start; 
   t_start = clock();  
   
@@ -673,14 +673,10 @@ int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, dou
     censoring[i]=0.0;
   }
 
-  printf("Data before and after log:\n");
-
   /*  ********************************************** */
   for (i=0; i<size; i++)
   {
-    printf("Before log = %f, ", inputData[i]);
     inputData[i]=log(inputData[i]);
-    printf("After log = %f \n", inputData[i]);
   }
   /*  ********************************************** */
   {
@@ -758,56 +754,12 @@ int weibull_fit_gpu(double* weibullparms, double* wparm_confidenceintervals, dou
       mean=0;
       myStd=0;
       
-      
-      /*
-      printf("Now printing x0 through CPU:\n");
-       
-      for (i=0; i<size; i++)
-      {
-        x0[i]=(inputData[i]-maxx)/range;
-        printf("%f\n", x0[i]);
-      }
-      
-       
-      for (i=0; i<size; i++)
-      {
-        mean+=x0[i];
-      }
-      
-      mean /= n;
-      printf("Now printing mean = %f \n", mean);
-      
-      for (i=0; i<size; i++)
-      {
-        var[i] = x0[i] - mean;
-      }
-      
-      for (i=0; i<size; i++)
-      {
-        myStd+=var[i]*var[i];
-      }
-      
-      myStd/=(n-1);
-      myStd=sqrt(myStd);
-      printf("Now printing myStd = %f \n", myStd);
-      */
-      
-      
-      // GPU replacement of the above code
-      ///*
       runKernels_ComputeMeanAndStd(inputData, x0, &mean, &myStd, maxx, range, size);
-      printf("Now printing x0 through GPU:\n");
-      for (i=0; i<size; i++)
-        printf("%f\n", x0[i]);
       printf("Now printing mean = %f \n", mean);
       printf("Now printing myStd = %f \n", myStd);
-      //*/
-      
       
       sigmahat = (sqrt((double)(6.0))*myStd)/PI;
       printf("sigmahat = %f\n", sigmahat);
-      
-      
       
       meanUncensored=0;
       
