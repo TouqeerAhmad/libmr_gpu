@@ -19,9 +19,13 @@ No restrictions on government use apply after the expiration date shown above.  
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <string>
 //#include "libMR/MetaRecognition.h"
 #include "MetaRecognition.h"
 //#include "weibull_gpu.h" 
+
+using namespace std;
 
 
 /* This is a basic test function for the user accessable function and to check precision is reasonable when run with no argument it produces 1 line of output
@@ -147,13 +151,63 @@ void Test_C_Code_GPU()
 }
   
 
+vector<double> parse1DBinFile(string inputFileName, int size) {
+    
+  vector<double> data;
+    
+  ifstream infile(inputFileName, ios::in | ios::binary);
+  double my_temp;
+  //int stop_here;
+    
+  for (int i_out = 0; i_out < size; i_out++)
+  {
+    infile.read((char *) &(my_temp), sizeof(my_temp));
+    data.push_back(my_temp);
+  }
+  infile.close();
+    
+  return data;
+}
+
+  
+  
 int main(int argc, char **argv)
 {
-  if(argc > 1) verbose=1;
+  //if(argc > 1) verbose=1;
   
   if(verbose) printf("Test C-code models\n");
   Test_C_Code();
   Test_C_Code_GPU();
+  
+  /*
+  vector<double> exampleFV;
+  exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
+  printf("%f\n",exampleFV[39995]);
+  printf("%f\n",exampleFV[39996]);
+  printf("%f\n",exampleFV[39997]);
+  printf("%f\n",exampleFV[39998]);
+  printf("%f\n",exampleFV[39999]);
+  
+  
+  double *data = (double *)malloc(sizeof(double)*40000);
+  
+  for (int k = 0; k < 40000; k++)
+  {
+    data[k] = exampleFV[k];
+  }
+  
+  
+  MetaRecognition mr1; 
+  mr1.FitLow(data, 40000, 2500);  
+  
+  printf("Weibull Parameters:\n ");
+  printf("%f %f %d %d %f\n", mr1.get_scale_param(), mr1.get_shape_param(), mr1.get_sign(), mr1.get_translate_amount(), mr1.get_small_score());
+  
+  free(data);
+  */
+   
+   
+  
   
   //int length=sizeof(tail)/sizeof(double);
   //if(verbose)	printf("Test class-based model ");
