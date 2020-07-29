@@ -188,11 +188,12 @@ int MetaRecognition::ReNormalizePDF(double *invec, double * outvec, int length){
 //before passing to generic
 int MetaRecognition::EvtGeneric(double* inputData, int inputDataSize, int inward, double x)
 {
+  int check = 0;
   printf("In EvtGeneric function ...\n");
   printf("printing the input data ...\n");
   
-  for (int k = 0; k < inputDataSize; k++)
-    printf("%f\n", inputData[k]);
+  //for (int k = 0; k < inputDataSize; k++)
+  //  printf("%f\n", inputData[k]);
   
   printf("inward = %d\n", inward);
   printf("sign = %d\n", sign);
@@ -250,9 +251,9 @@ int MetaRecognition::EvtGeneric(double* inputData, int inputDataSize, int inward
   for(int i=0; i < fitting_size; i++)
     {
       //translate and subtract small score
-      printf("dataPtr[i] before = %f ", dataPtr[i]);
+      //printf("dataPtr[i] before = %f ", dataPtr[i]);
       dataPtr[i] = dataPtr[i] + translate_amount - small_score;
-      printf("dataPtr[i] after = %f \n", dataPtr[i]);
+      //printf("dataPtr[i] after = %f \n", dataPtr[i]);
     }
 
 
@@ -294,6 +295,9 @@ int MetaRecognition::EvtGeneric(double* inputData, int inputDataSize, int inward
 //Wrapper fitting functions EvtLow and EvtHigh to make it simpler for new users of the library.
 int MetaRecognition::FitLow(double* inputData, int inputDataSize, int fsize)
 {
+  printf("The fsize = %d\n", fsize);
+  printf("The inputDataSize = %d\n", inputDataSize);
+  
   if(fsize>0)    fitting_size=fsize;
   sign = -1;
   return EvtGeneric(inputData, inputDataSize);

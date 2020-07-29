@@ -34,7 +34,6 @@
 #include <float.h>
 #include <time.h>
 
-
 #include "weibull.h"
 
 #ifdef __cplusplus
@@ -477,7 +476,7 @@ static int  weibull_neg_log_likelihood(double* nlogL, double* acov, double* weib
         double sigmaSq = sigma * sigma;
         double avarDenom = (nH11*nH22 - nH12*nH12);
         
-        printf("avarDenom %f\n", avarDenom);
+        //printf("avarDenom %f\n", avarDenom);
 
         acov[0]=sigmaSq*(nH22/avarDenom);
         acov[1]=sigmaSq*((-1*nH12)/avarDenom);
@@ -780,10 +779,21 @@ extern "C" {
 
    */
 
+
 int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double* inputData, double alpha, int size)
 {
 
-    printf("In weibull_fit function ...\n");
+    //printf("In weibull_fit function ...\n");
+    //printf("alpha = %f\n", alpha);
+    
+    //FILE *write_ptr;
+    //write_ptr = fopen("sample_data/FV_9_tail_processed.bin","wb");  // w for write, b for binary
+    //for (int k = 0; k < size; k++)  
+    //  fwrite(&inputData[k],sizeof(inputData[k]),1,write_ptr); // write 10 bytes from our buffer
+    //fclose(write_ptr);
+    
+    //printf("Size of the array being processed: %d\n", size);
+    
     clock_t t_start; 
     t_start = clock();  
 
@@ -845,7 +855,7 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
           mySum+=frequency[i];
         }
 
-      printf("mySum = %f\n", mySum);
+      //printf("mySum = %f\n", mySum);
       
       n=mySum;
       if(n<=1) WEIBULL_ERROR_HANDLER(-2,"Insufficient distinct data in weibull_fit\n");
@@ -942,10 +952,10 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
       myStd/=(n-1);
       myStd=sqrt(myStd);
 
-      printf("Now printing mean = %f \n", mean);
-      printf("Now printing myStd = %f \n", myStd);
+      //printf("Now printing mean = %f \n", mean);
+      //printf("Now printing myStd = %f \n", myStd);
       sigmahat = (sqrt((double)(6.0))*myStd)/PI;
-      printf("sigmahat = %f\n", sigmahat);
+      //printf("sigmahat = %f\n", sigmahat);
 
       meanUncensored=0;
 
@@ -953,11 +963,11 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
         {
           meanUncensored+=(frequency[i]*x0[i])/n;
         }
-      printf("meanUncensored = %f\n", meanUncensored);
+      //printf("meanUncensored = %f\n", meanUncensored);
 
       if ((tempVal=weibull_scale_likelihood(sigmahat,x0,frequency,meanUncensored,size)) > 0)
         {
-          printf("In the if condition ...\n");
+          //printf("In the if condition ...\n");
           
           upper=sigmahat;
           lower=0.5*upper;
@@ -975,7 +985,7 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
         }
       else
         {
-          printf("In the else part ...\n");
+          //printf("In the else part ...\n");
           
           lower = sigmahat;
           upper = 2.0 * lower;
@@ -998,8 +1008,8 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
       search_band[0]=lower;
       search_band[1]=upper;
 
-      printf("lower = %f\n", lower);
-      printf("upper = %f\n", upper);  
+      //printf("lower = %f\n", lower);
+      //printf("upper = %f\n", upper);  
       
       /* ... Next we  go find the root (zero) of the likelihood eqn which  wil be the MLE for sigma. */
       /* then  the MLE for mu has an explicit formula from that.  */
@@ -1011,7 +1021,7 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
 
         code = wdfzero(&sigmahat,&likelihood_value,&err,search_band,tol,x0,frequency,meanUncensored,size);
         
-        printf("code = %d\n", code);
+        //printf("code = %d\n", code);
         
 
 #ifndef WEIBULL_IGNORE_ERRORS
@@ -1062,11 +1072,11 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
 
           rval=weibull_neg_log_likelihood(&nlogL,acov,weibullparms,inputData,censoring,frequency,size);
           
-          printf("nlogL  = %f\n", nlogL);
-          printf("acov[0]  = %f\n", acov[0]);
-          printf("acov[1]  = %f\n", acov[1]);
-          printf("acov[2]  = %f\n", acov[2]);
-          printf("acov[3]  = %f\n", acov[3]);
+          //printf("nlogL  = %f\n", nlogL);
+          //printf("acov[0]  = %f\n", acov[0]);
+          //printf("acov[1]  = %f\n", acov[1]);
+          //printf("acov[2]  = %f\n", acov[2]);
+          //printf("acov[3]  = %f\n", acov[3]);
           
           
           
@@ -1110,7 +1120,7 @@ int weibull_fit(double* weibullparms, double* wparm_confidenceintervals, double*
     t_start = clock() - t_start; 
     double time_taken = ((double)t_start)/CLOCKS_PER_SEC; // in seconds 
     
-    printf("fun() took %f seconds to execute \n", time_taken); 
+    //printf("fun() took %f seconds to execute \n", time_taken); 
     
     return 1;
 }

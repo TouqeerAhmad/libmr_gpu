@@ -17,6 +17,7 @@ No restrictions on government use apply after the expiration date shown above.  
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -102,6 +103,8 @@ double Wsmall_ans[] = { 1.000000000, 0.94423579,  0.39834863,  0.26183566,  0.26
 
 
 vector<double> parse1DBinFile(string inputFileName, int size) {
+  
+  //std::cout << inputFileName << std::endl;
   
   vector<double> data;
   
@@ -197,43 +200,106 @@ void Test_C_Code_GPU()
 
 void Test_On_FV_Distances()
 {
-  vector<double> exampleFV;
-  exampleFV = parse1DBinFile("/home/tahmad/work/stand_alone_libMr/data_from_Steve/FV0.bin", 40000);
-  printf("%f\n",exampleFV[39995]);
-  printf("%f\n",exampleFV[39996]);
-  printf("%f\n",exampleFV[39997]);
-  printf("%f\n",exampleFV[39998]);
-  printf("%f\n",exampleFV[39999]);
+  //const int dataSize1 = 40000;
+  const int dataSize2 = 2500;
+  const int tailSize = 2500;
+  //vector<double> exampleFV1;
+  vector<double> exampleFV2;
+  //exampleFV1 = parse1DBinFile("sample_data/FV0.bin", dataSize1);
+  exampleFV2 = parse1DBinFile("sample_data/FV_0_tail.bin", dataSize2);
+  
+  //double *data1 = (double *)malloc(sizeof(double)*dataSize1);
+  double *data2 = (double *)malloc(sizeof(double)*dataSize2);
   
   
-  double *data = (double *)malloc(sizeof(double)*40000);
+  //for (int k = 0; k < dataSize1; k++)
+  //{
+  //  data1[k] = exampleFV1[k];
+  //}
   
-  for (int k = 0; k < 40000; k++)
+  for (int k = 0; k < dataSize2; k++)
   {
-    data[k] = exampleFV[k];
+    data2[k] = exampleFV2[k];
+  }
+  
+  //MetaRecognition mr1; 
+  MetaRecognition mr2; 
+  
+  //mr1.FitLow(data1, dataSize1, tailSize);  
+  mr2.FitLow(data2, dataSize2, tailSize);
+  
+  //printf("Weibull Parameters1:\n ");
+  //printf("%f %f %d %d %f\n", mr1.get_scale_param(), mr1.get_shape_param(), mr1.get_sign(), mr1.get_translate_amount(), mr1.get_small_score());
+  printf("Weibull Parameters2:\n ");
+  printf("%f %f %d %d %f\n", mr2.get_scale_param(), mr2.get_shape_param(), mr2.get_sign(), mr2.get_translate_amount(), mr2.get_small_score());
+  
+  //free(data1);
+  free(data2);
+  
+}
+
+
+
+void Test_MutipleData()
+{
+  const int dataSize2 = 2500;
+  const int tailSize = 2500;
+  
+  vector<double> exampleFV2[10];
+  for (int k = 0; k < 10; k ++)
+    exampleFV2[k] = parse1DBinFile("sample_data/FV_" + std::to_string(k) + "_tail_processed.bin", dataSize2);
+  
+  
+  clock_t t_start, t_sum = 0.0; 
+  
+  for (int outer_loop = 0; outer_loop < 1; outer_loop++)
+  {
+    for (int count = 0; count < 1; count++)
+    {
+      for (int j = 0; j < 10; j++)
+      {
+        double *data2 = (double *)malloc(sizeof(double)*dataSize2);
+        
+        for (int k = 0; k < dataSize2; k++)
+        {
+          data2[k] = exampleFV2[j][k];
+        }
+        
+        double* weibull_parms = (double *)malloc(sizeof(double)* 2);
+        double* parms_confidence_internal  = (double *)malloc(sizeof(double)* 4);
+        
+        t_start = clock();
+        weibull_fit(weibull_parms, parms_confidence_internal, data2, 5.0, tailSize);
+        t_sum += (clock() - t_start);
+        
+        printf("Weibull Parameters for instance = %d\n", j);
+        printf("%f %f \n", weibull_parms[0], weibull_parms[1]);
+        
+        free(data2);
+      }
+    }
   }
   
   
-  MetaRecognition mr1; 
-  mr1.FitLow(data, 40000, 2500);  
+  //t_start = clock() - t_start; 
+  double time_taken = ((double)t_sum)/CLOCKS_PER_SEC; // in seconds 
+  printf("fun() took %f seconds to execute \n", time_taken);
   
-  printf("Weibull Parameters:\n ");
-  printf("%f %f %d %d %f\n", mr1.get_scale_param(), mr1.get_shape_param(), mr1.get_sign(), mr1.get_translate_amount(), mr1.get_small_score());
   
-  free(data);
 }
+  
   
   
 int main(int argc, char **argv)
 {
   //if(argc > 1) verbose=1;
   
-  if(verbose) printf("Test C-code models\n");
-  Test_C_Code();
-  Test_C_Code_GPU();
+  //if(verbose) printf("Test C-code models\n");
+  //Test_C_Code();
+  //Test_C_Code_GPU();
   
   //Test_On_FV_Distances();
-  
+  Test_MutipleData();
   
   //int length=sizeof(tail)/sizeof(double);
   //if(verbose)	printf("Test class-based model ");
